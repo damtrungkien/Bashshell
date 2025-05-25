@@ -1,41 +1,46 @@
 #!/bin/bash
 
-echo "======================================="
-echo "  Download WordPress No Content"
-echo "======================================="
+# Kiểm tra curl
+if ! command -v curl &>/dev/null; then
+    echo "❌ Cần cài đặt 'curl' để chạy script này."
+    exit 1
+fi
 
-# Lấy danh sách phiên bản có sẵn từ API WordPress
-versions=$(curl -s https://api.wordpress.org/core/version-check/1.7/ | grep -oP '(?<="version":")[^"]+' | head -n 10)
+echo "🔄 Đang lấy thông tin từ WordPress API..."
+json=$(curl -s https://api.wordpress.org/core/version-check/1.7/)
 
-echo "📌 10 phiên bản WordPress mới nhất có sẵn:"
-echo "$versions" | tr ' ' '\n'
-echo "======================================="
+# Trích xuất 5 phiên bản đầu tiên
+versions=($(echo "$json" | grep -oP '"version"\s*:\s*"\K[0-9\.]+' | head -n 5))
 
-# Nhập phiên bản từ người dùng (nếu không nhập, dùng bản mới nhất)
-while true; do
-    read -p "Nhập phiên bản WordPress muốn tải (Enter để Down bản mới nhất - Đầy đủ): " version
-    
-    if [[ -z "$version" ]]; then
-        url="https://wordpress.org/latest.zip"
-        file_name="wordpress-latest.zip"
-        echo "📌 Không nhập phiên bản. Mặc định tải về bản mới nhất!"
-        break
-    elif echo "$versions" | grep -q "^$version$"; then
-        url="https://downloads.wordpress.org/release/wordpress-${version}-no-content.zip"
-        file_name="wordpress-${version}-no-content.zip"
-        break
-    else
-        echo "❌ Phiên bản không hợp lệ! Vui lòng nhập lại một trong các phiên bản có sẵn."
-    fi
+echo "== 5 PHIÊN BẢN WORDPRESS MỚI NHẤT =="
+for i in "${!versions[@]}"; do
+    echo "$((i+1)). Version: ${versions[$i]}"
 done
 
-# Xác nhận tải xuống
-echo "🔽 Đang tải về: $url ..."
-wget -c "$url" -O "$file_name"
+# Nhập lựa chọn
+read -p $'\nNhập số phiên bản (1-5): ' ver_choice
+read -p "Tải bản nào? (F = Full | N = No-content): " type_choice
 
-# Kiểm tra tải xuống có thành công không
-if [[ $? -eq 0 ]]; then
-    echo "✅ Tải về thành công: $file_name"
+# Xử lý lựa chọn
+ver_index=$((ver_choice - 1))
+selected_version="${versions[$ver_index]}"
+
+if [[ "$type_choice" == "F" || "$type_choice" == "f" ]]; then
+    file_url="https://wordpress.org/wordpress-${selected_version}.zip"
+elif [[ "$type_choice" == "N" || "$type_choice" == "n" ]]; then
+    file_url="https://wordpress.org/wordpress-${selected_version}-no-content.zip"
 else
-    echo "❌ Lỗi! Không thể tải về. Vui lòng kiểm tra lại version đã nhập."
+    echo "❌ Loại không hợp lệ. Chọn 'F' hoặc 'N'."
+    exit 1
+fi
+
+# Tải file
+file_name=$(basename "$file_url")
+echo "⬇ Đang tải: $file_name ..."
+curl -# -O "$file_url"
+
+if [[ -f "$file_name" ]]; then
+    echo "✅ Tải thành công: $file_name"
+else
+    echo "❌ Tải thất bại."
 fi
