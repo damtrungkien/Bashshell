@@ -16,9 +16,11 @@ if [ -z "$response" ]; then
     exit 1
 fi
 
-# Lấy 5 phiên bản đầy đủ và 5 phiên bản no-content
-full_versions=($(echo "$response" | grep -o '"version":"[^"]*"' | awk -F'"' '{print $4}' | grep -v "^$" | sort -V | uniq | head -n 5))
-no_content_versions=($(echo "$response" | grep -o '"version":"[^"]*"' | awk -F'"' '{print $4}' | grep -v "^$" | sort -V | uniq | head -n 5))
+# Lấy 5 phiên bản đầy đủ đầu tiên từ trên xuống
+full_versions=($(echo "$response" | grep -o '"version":"[^"]*"' | awk -F'"' '{print $4}' | grep -v "^$" | uniq | head -n 5))
+
+# Lấy 5 phiên bản no-content đầu tiên từ trên xuống
+no_content_versions=($(echo "$response" | grep -o '"version":"[^"]*"' | awk -F'"' '{print $4}' | grep -v "^$" | uniq | head -n 5))
 
 # Kiểm tra xem có dữ liệu phiên bản hay không
 if [ ${#full_versions[@]} -eq 0 ] && [ ${#no_content_versions[@]} -eq 0 ]; then
@@ -30,7 +32,7 @@ fi
 echo -e "\nCác phiên bản đầy đủ (Full Package):"
 for i in "${!full_versions[@]}"; do
     version=${full_versions[$i]}
-    package_url=$(echo "$response" | grep -o "\"version\":\"$version\".*\"package\":\"[^\"]*\"" | awk -F'"package":"' '{print $2}' | awk -F'"' '{print $1}' | head -n 1)
+    package_url=$(echo "$response" | grep -m 1 -o "\"version\":\"$version\".*\"package\":\"[^\"]*\"" | awk -F'"package":"' '{print $2}' | awk -F'"' '{print $1}')
     if [ -n "$package_url" ]; then
         echo "$((i+1)). Phiên bản $version - URL: $package_url"
     else
@@ -42,7 +44,7 @@ done
 echo -e "\nCác phiên bản no-content:"
 for i in "${!no_content_versions[@]}"; do
     version=${no_content_versions[$i]}
-    package_url=$(echo "$response" | grep -o "\"version\":\"$version\".*\"package_no_content\":\"[^\"]*\"" | awk -F'"package_no_content":"' '{print $2}' | awk -F'"' '{print $1}' | head -n 1)
+    package_url=$(echo "$response" | grep -m 1 -o "\"version\":\"$version\".*\"package_no_content\":\"[^\"]*\"" | awk -F'"package_no_content":"' '{print $2}' | awk -F'"' '{print $1}')
     if [ -n "$package_url" ]; then
         echo "$((i+1)). Phiên bản $version - URL: $package_url"
     else
@@ -64,9 +66,9 @@ fi
 
 # Tìm URL tải về dựa trên phiên bản và loại gói
 if [ "$package_type" == "1" ]; then
-    package_url=$(echo "$response" | grep -o "\"version\":\"$version_input\".*\"package\":\"[^\"]*\"" | awk -F'"package":"' '{print $2}' | awk -F'"' '{print $1}' | head -n 1)
+    package_url=$(echo "$response" | grep -m 1 -o "\"version\":\"$version_input\".*\"package\":\"[^\"]*\"" | awk -F'"package":"' '{print $2}' | awk -F'"' '{print $1}')
 elif [ "$package_type" == "2" ]; then
-    package_url=$(echo "$response" | grep -o "\"version\":\"$version_input\".*\"package_no_content\":\"[^\"]*\"" | awk -F'"package_no_content":"' '{print $2}' | awk -F'"' '{print $1}' | head -n 1)
+    package_url=$(echo "$response" | grep -m 1 -o "\"version\":\"$version_input\".*\"package_no_content\":\"[^\"]*\"" | awk -F'"package_no_content":"' '{print $2}' | awk -F'"' '{print $1}')
 else
     echo "Lỗi: Loại gói không hợp lệ. Vui lòng chọn 1 hoặc 2."
     exit 1
