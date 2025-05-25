@@ -8,8 +8,8 @@ get_latest_versions() {
         exit 1
     fi
 
-    # Sử dụng jq để trích xuất 10 phiên bản mới nhất
-    versions=$(echo "$response" | jq -r '.offers[:10] | .[] | .version')
+    # Trích xuất phiên bản từ JSON mà không dùng jq
+    versions=$(echo "$response" | grep -o '"version":"[^"]*"' | awk -F'"' '{print $4}' | head -n 10)
     echo "$versions"
 }
 
@@ -28,8 +28,8 @@ download_wordpress() {
 
 # Main
 main() {
-    # Kiểm tra nếu jq và wget đã được cài đặt
-    command -v jq >/dev/null2>&1 || { echo "Cần cài đặt jq. Vui lòng cài đặt bằng: sudo apt install jq (trên Ubuntu/Debian)"; exit 1; }
+    # Kiểm tra nếu curl và wget đã được cài đặt
+    command -v curl >/dev/null2>&1 || { echo "Cần cài đặt curl. Vui lòng cài đặt bằng: sudo apt install curl (trên Ubuntu/Debian)"; exit 1; }
     command -v wget >/dev/null2>&1 || { echo "Cần cài đặt wget. Vui lòng cài đặt bằng: sudo apt install wget (trên Ubuntu/Debian)"; exit 1; }
 
     # Lấy danh sách phiên bản
