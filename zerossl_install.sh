@@ -1,4 +1,5 @@
 #!/bin/bash
+#Author: DOTRUNGQUAN.INFO
 # Function to install SSL for main domain (option 1)
 install_ssl_main_domain() {
     read -p "Nhập vào domain: " main_domain
